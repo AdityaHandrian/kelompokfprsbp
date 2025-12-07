@@ -3,68 +3,12 @@ import { useAuthContext } from '../contexts/AuthContext';
 import { ROUTES } from '../utils/constants';
 import {
   ArrowRight,
-  Brain,
-  Heart,
-  BarChart3,
-  Users,
-  TrendingUp,
   CheckCircle,
+  TrendingUp,
 } from 'lucide-react';
 
 export default function Home() {
   const { user, isAuthenticated } = useAuthContext();
-
-  const features = [
-    {
-      icon: Brain,
-      title: 'AI-Powered',
-      description: 'Menggunakan algoritma SVD++ untuk rekomendasi yang lebih akurat',
-      color: 'blue',
-    },
-    {
-      icon: Heart,
-      title: 'Sentiment Analysis',
-      description: 'Analisis sentimen review untuk kualitas produk yang lebih baik',
-      color: 'pink',
-    },
-    {
-      icon: BarChart3,
-      title: 'Collaborative Filtering',
-      description: 'Rekomendasi berdasarkan perilaku pengguna serupa',
-      color: 'green',
-    },
-  ];
-
-  const stats = [
-    { label: 'Produk Teranalisis', value: '10K+' },
-    { label: 'Pengguna Aktif', value: '5K+' },
-    { label: 'Akurasi', value: '92%' },
-    { label: 'Rekomendasi Harian', value: '50K+' },
-  ];
-
-  const reviews = [
-    {
-      text:
-        "Sistem rekomendasi ini sangat akurat! Saya menemukan produk yang sempurna sesuai kebutuhan saya.",
-      author: 'Sarah Wijaya',
-      role: 'Pengguna Premium',
-      rating: 5,
-    },
-    {
-      text:
-        'Fitur analisis sentimen sangat membantu dalam mengevaluasi kualitas produk sebelum membeli.',
-      author: 'Budi Raharjo',
-      role: 'Pengguna Aktif',
-      rating: 5,
-    },
-    {
-      text:
-        'Rekomendasi produk yang diberikan selalu relevan dan sesuai dengan preferensi saya.',
-      author: 'Diana Putri',
-      role: 'Pengguna Baru',
-      rating: 4.5,
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
@@ -109,83 +53,6 @@ export default function Home() {
             <strong className="ml-1">{user.name}</strong>!
           </div>
         )}
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-12 bg-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {stats.map((stat, index) => (
-              <div key={index} className="space-y-2">
-                <div className="text-3xl font-bold text-gray-900">{stat.value}</div>
-                <div className="text-sm text-gray-600">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Fitur Unggulan</h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-12">
-            Teknologi canggih untuk pengalaman belanja yang lebih cerdas
-          </p>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <div
-                  key={index}
-                  className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-200"
-                >
-                  <div className={`w-14 h-14 bg-${feature.color}-100 rounded-lg flex items-center justify-center mb-6`}>
-                    <Icon className={`w-7 h-7 text-${feature.color}-600`} />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">{feature.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{feature.description}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-20 bg-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Apa Kata Pengguna?</h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-12">
-            Pengalaman nyata dari ribuan pengguna yang puas
-          </p>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {reviews.map((review, index) => (
-              <div key={index} className="bg-white p-8 rounded-xl shadow-lg">
-                <div className="flex mb-4">
-                  {Array.from({ length: Math.floor(review.rating) }).map((_, i) => (
-                    <span key={i} className="text-yellow-400 text-xl">⭐</span>
-                  ))}
-                  {review.rating % 1 !== 0 && <span className="text-yellow-400 text-xl">⭐</span>}
-                </div>
-
-                <p className="text-gray-600 mb-6 italic">"{review.text}"</p>
-
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center text-white font-bold">
-                    {review.author.split(' ').map((n) => n[0]).join('')}
-                  </div>
-                  <div className="ml-3">
-                    <p className="font-semibold text-gray-900">{review.author}</p>
-                    <p className="text-sm text-gray-500">{review.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </section>
 
       {/* CTA Section */}
