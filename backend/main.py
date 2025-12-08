@@ -9,10 +9,10 @@ import sqlite3
 import pickle
 import torch
 import math
+import ast
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
 load_dotenv()
 
 NCF_PATH = os.getenv("NCF_PATH")
@@ -138,6 +138,8 @@ app.add_middleware(
     allow_headers=["*"],          
 )
 
+# == CONTROLLERS ==
+
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -165,7 +167,7 @@ def fetch_db_details(item_ids, scores):
 
 # == ENDPOINTS ==
 
-@app.get("/recommend_ncf/{user_id}")
+@app.get("/api/recommend_ncf/{user_id}", tags=["Recommendations"])
 def recommend_ncf_user(user_id: int, k: int = 10):
     if ml_models["ncf"] is None:
         raise HTTPException(status_code=503, detail="Model not available")
@@ -211,7 +213,7 @@ def recommend_ncf_user(user_id: int, k: int = 10):
     
     return fetch_db_details(top_item_ids, top_scores.numpy())
 
-@app.get("/recommend_ncf/{user_id}/context/{item_id}")
+@app.get("/api/recommend_ncf/{user_id}/context/{item_id}", tags=["Recommendations"])
 def recommend_ncf_context(user_id: int, item_id: int, k: int = 10):
     # Check model status
     if ml_models["ncf"] is None:
@@ -271,7 +273,7 @@ def recommend_ncf_context(user_id: int, item_id: int, k: int = 10):
     
     return fetch_db_details(final_item_ids, final_scores.numpy())
 
-@app.get("/recommend_cbf/{user_id}")
+@app.get("/api/recommend_cbf/{user_id}", tags=["Recommendations"])
 def recommend_cbf_user(user_id: int, k: int = 10):
     model = ml_models["cbf"]
     if model is None:
@@ -298,7 +300,7 @@ def recommend_cbf_user(user_id: int, k: int = 10):
     
     return fetch_db_details(top_item_ids, top_scores)
 
-@app.get("/recommend_cbf/{user_id}/context/{item_id}")
+@app.get("/api/recommend_cbf/{user_id}/context/{item_id}", tags=["Recommendations"])
 def recommend_cbf_context(user_id: int, item_id: int, k: int = 10):
     model = ml_models["cbf"]
     if model is None:
@@ -345,7 +347,7 @@ def recommend_cbf_context(user_id: int, item_id: int, k: int = 10):
             
     return fetch_db_details(clean_ids, clean_scores)
 
-@app.get("/products/{item_id}")
+@app.get("/api/products/{item_id}", tags=["Products"])
 def get_product_details(item_id: int):
     conn = get_db_connection()
     product = conn.execute("SELECT * FROM items WHERE itemId = ?", (item_id,)).fetchone()
@@ -353,3 +355,65 @@ def get_product_details(item_id: int):
     if product is None:
         raise HTTPException(status_code=404, detail="Item not found")
     return dict(product)
+
+@app.get("/api/products/{page_num}/page/{page_size}", tags=["Products"])
+def get_products_paginated(page_num: int, page_size: int):
+    conn = get_db_connection()
+    offset = (page_num - 1) * page_size
+    products = conn.execute("SELECT * FROM items LIMIT ? OFFSET ?", (page_size, offset)).fetchall()
+    conn.close()
+    return [dict(p) for p in products]
+
+@app.get("/api/users/", tags=["Users"])
+def get_all_user_profiles():
+    conn = get_db_connection()
+    profiles = conn.execute("SELECT * FROM users").fetchall()
+    conn.close()
+    return [dict(p) for p in profiles]
+
+@app.get("/api/users/{user_id}", tags=["Users"])
+def get_user_profile(user_id: int):
+    conn = get_db_connection()
+    profile = conn.execute("SELECT * FROM users WHERE userId = ?", (user_id,)).fetchone()
+    conn.close()
+    if profile is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user_data = dict(profile)
+
+    raw_history = user_data.get("purchase_history", "[]")
+    item_ids = []
+
+    try:
+        if isinstance(raw_history, str):
+            item_ids = ast.literal_eval(raw_history)
+        elif isinstance(raw_history, list):
+            item_ids = raw_history
+    except Exception:
+        item_ids = []
+
+    item_details = []
+
+    if item_ids:
+        unique_ids = list(set(item_ids))
+            
+        # Dynamic SQL for "WHERE itemId IN (?, ?, ?)"
+        placeholders = ','.join('?' for _ in unique_ids)
+        query = f"SELECT * FROM items WHERE itemId IN ({placeholders})"
+        
+        # Execute query
+        item_rows = conn.execute(query, unique_ids).fetchall()
+        
+        # Create a Lookup Dictionary: ID -> Item Data
+        item_lookup = {row['itemId']: dict(row) for row in item_rows}
+        
+        # Reconstruct the full history list (preserving order and duplicates)
+        for iid in item_ids:
+            if iid in item_lookup:
+                item_details.append(item_lookup[iid])
+
+    # Attach details to response
+    user_data['purchase_history_details'] = item_details
+    
+    conn.close()
+    return user_data
