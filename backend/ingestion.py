@@ -1,6 +1,9 @@
 import pandas as pd
 import sqlite3
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 USER_CSV_PATH = os.getenv("USER_CSV_PATH")
 ITEM_CSV_PATH = os.getenv("ITEM_CSV_PATH")
