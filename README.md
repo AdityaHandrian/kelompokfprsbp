@@ -1,16 +1,89 @@
-# React + Vite
+# E-Commerce Recommendation System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack application for product recommendations and sentiment analysis using FastAPI (backend) and React + Vite (frontend).
 
-Currently, two official plugins are available:
+## Project Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```
+kelompokfprsbp/
+├── backend/          # FastAPI backend server
+│   ├── data/         # CSV data files
+│   ├── models/       # ML model checkpoints
+│   ├── main.py       # FastAPI application
+│   └── ingestion.py  # Database ingestion script
+├── src/              # React frontend
+├── public/           # Static assets
+└── package.json      # Frontend dependencies
+```
 
-## React Compiler
+## Backend Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Prerequisites
+- Python 3.8+
+- pip
 
-## Expanding the ESLint configuration
+### 1. Install Dependencies
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```powershell
+cd backend
+pip install -r requirements.txt
+```
+
+### 2. Configure Environment Variables
+
+Create a `.env` file in the `backend/` directory
+
+### 3. Ingest Data
+
+Run the ingestion script to populate the database from CSV files:
+
+```powershell
+cd backend
+python ingestion.py
+```
+
+### 4. Run Backend Server
+
+```powershell
+cd backend
+uvicorn main:app --reload
+```
+
+The backend API will be available at `http://localhost:8000`
+
+API documentation available at Swagger UI: `http://localhost:8000/docs`
+
+## Frontend Setup
+
+### Prerequisites
+- Node.js 16+
+- npm or yarn
+
+### 1. Install Dependencies
+
+```powershell
+npm install
+```
+
+Or using yarn:
+```powershell
+yarn install
+```
+
+### 2. Run Development Server
+
+```powershell
+npm run dev
+```
+
+The frontend will be available at `http://localhost:5173`
+
+## Available Scripts
+
+### Backend
+- `python ingestion.py` - Ingest data from CSV to database
+- `uvicorn main:app --reload` - Run development server with hot reload
+
+### Frontend
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
