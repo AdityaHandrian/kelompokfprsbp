@@ -1,17 +1,23 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, User } from 'lucide-react';
 import { useState } from 'react';
 import { ROUTES } from '../utils/constants';
 import { useAuthContext } from '../contexts/AuthContext';
 
 // Desktop Authentication Section
 function AuthSection() {
-  const { user, logout } = useAuthContext();
+  const { user, currentUserId, logout, isAuthenticated } = useAuthContext();
 
-  if (user) {
+  if (isAuthenticated) {
     return (
       <div className="hidden md:flex items-center space-x-4">
-        <span className="text-sm">{user.name}</span>
+        <Link 
+          to={ROUTES.USERS}
+          className="flex items-center text-sm hover:text-blue-200 transition"
+        >
+          <User className="w-4 h-4 mr-1" />
+          User #{currentUserId}
+        </Link>
         <button
           onClick={logout}
           className="px-4 py-2 rounded-md bg-red-500 text-white font-medium hover:bg-red-600 transition-colors"
@@ -25,10 +31,10 @@ function AuthSection() {
   return (
     <div className="hidden md:flex items-center space-x-4">
       <Link
-        to={ROUTES.LOGIN}
+        to={ROUTES.USERS}
         className="px-4 py-2 rounded-md bg-white text-blue-600 font-medium hover:bg-gray-100 transition-colors"
       >
-        Login
+        Select User
       </Link>
     </div>
   );
@@ -36,14 +42,19 @@ function AuthSection() {
 
 // Mobile Authentication Section (untuk tampilan HP)
 function MobileAuthSection({ setIsOpen }) {
-  const { user, logout } = useAuthContext();
+  const { currentUserId, logout, isAuthenticated } = useAuthContext();
 
-  if (user) {
+  if (isAuthenticated) {
     return (
       <div className="border-t border-blue-500 mt-2 pt-2">
-        <div className="px-3 py-2 rounded-md text-base font-medium">
-          {user.name}
-        </div>
+        <Link
+          to={ROUTES.USERS}
+          onClick={() => setIsOpen(false)}
+          className="flex items-center px-3 py-2 rounded-md text-base font-medium hover:bg-blue-500"
+        >
+          <User className="w-4 h-4 mr-2" />
+          User #{currentUserId}
+        </Link>
         <button
           onClick={() => {
             logout();
@@ -59,11 +70,11 @@ function MobileAuthSection({ setIsOpen }) {
 
   return (
     <Link
-      to={ROUTES.LOGIN}
+      to={ROUTES.USERS}
       onClick={() => setIsOpen(false)}
       className="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-500"
     >
-      Login
+      Select User
     </Link>
   );
 }
@@ -77,10 +88,9 @@ export default function Navbar() {
   const isActive = (path) => location.pathname === path;
 
   const navLinks = [
-    { name: 'Beranda', path: ROUTES.HOME },
-    { name: 'Rekomendasi', path: ROUTES.RECOMMENDATION },
-    { name: 'Analisis Sentimen', path: ROUTES.SENTIMENT },
-    { name: 'Dashboard', path: ROUTES.DASHBOARD },
+    { name: 'Home', path: ROUTES.HOME },
+    { name: 'Users', path: ROUTES.USERS },
+    { name: 'Catalog', path: ROUTES.CATALOG },
   ];
 
   return (
@@ -93,7 +103,7 @@ export default function Navbar() {
             <div className="w-10 h-10 bg-white text-blue-600 rounded-lg flex items-center justify-center font-bold">
               RS
             </div>
-            <span className="hidden sm:inline text-lg font-bold">RecSystem</span>
+            <span className="hidden sm:inline text-lg font-bold">RecSys Demo</span>
           </Link>
 
           {/* Desktop Menu */}

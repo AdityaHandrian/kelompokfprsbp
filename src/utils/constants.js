@@ -1,6 +1,8 @@
 // ======================= ROUTES =======================
 export const ROUTES = {
   HOME: '/',
+  USERS: '/users',
+  CATALOG: '/catalog',
   LOGIN: '/login',
   SIGNUP: '/signup',
   RECOMMENDATION: '/recommendation',

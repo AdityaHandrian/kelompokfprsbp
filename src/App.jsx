@@ -2,12 +2,14 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import { AuthProvider } from './contexts/AuthContext';
 import { ROUTES } from './utils/constants';
-import Signup from './pages/Signup';
 import Footer from './components/Footer';
 
-// Placeholder components
+// Page components
 import Home from './pages/Home';
+import Users from './pages/Users';
+import Catalog from './pages/Catalog';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
 import Recommendation from './pages/Recommendation';
 import SentimentAnalysis from './pages/SentimentAnalysis';
 import Dashboard from './pages/Dashboard';
@@ -22,6 +24,8 @@ function App() {
           <main className="flex-1">
             <Routes>
               <Route path={ROUTES.HOME} element={<Home />} />
+              <Route path={ROUTES.USERS} element={<Users />} />
+              <Route path={ROUTES.CATALOG} element={<Catalog />} />
               <Route path={ROUTES.LOGIN} element={<Login />} />
               <Route path={ROUTES.SIGNUP} element={<Signup />} />
               <Route path={ROUTES.RECOMMENDATION} element={<Recommendation />} />
@@ -38,7 +42,7 @@ function App() {
             </Routes>
           </main>
 
-          <Footer /> {/* Footer berada setelah <main> */}
+          <Footer />
         </div>
       </Router>
     </AuthProvider>
