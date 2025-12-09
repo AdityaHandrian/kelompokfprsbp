@@ -12,6 +12,8 @@ import torch
 import math
 import ast
 import os
+import random  # <-- BARU: Untuk logika dummy sentiment
+from pydantic import BaseModel # <-- BARU: Untuk validasi request body
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -29,6 +31,11 @@ ml_models = {
     "cbf": None
 }
 
+# ======================= DATA MODELS (BARU) =======================
+class SentimentRequest(BaseModel):
+    text: str
+
+# ======================= ML MODELS STRUCTURE =======================
 class NCFModel(nn.Module):
     def __init__(self, num_users, num_items, num_cats, num_dense=2, embed_dim=16):
         super(NCFModel, self).__init__()
@@ -65,7 +72,7 @@ def calculate_percentage(score):
     pct = max(0, score) * 100
     return int(pct)
 
-# == APP SETUP ==
+# ======================= APP LIFECYCLE =======================
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -166,7 +173,7 @@ app.add_middleware(
     allow_headers=["*"],          
 )
 
-# == CONTROLLERS ==
+# ======================= CONTROLLERS =======================
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -193,7 +200,32 @@ def fetch_db_details(item_ids, scores):
             
     return {"recommendations": results}
 
-# == ENDPOINTS ==
+@app.post("/api/sentiment/analyze", tags=["Sentiment"])
+async def analyze_sentiment_endpoint(request: SentimentRequest):
+    """
+    Endpoint untuk menganalisis sentimen teks review.
+    MOCK LOGIC (Demo) - Ganti dengan model NLP asli jika sudah siap.
+    """
+    text_lower = request.text.lower()
+    
+    # Keyword sederhana untuk demo
+    positive_keywords = ["bagus", "keren", "suka", "puas", "mantap", "cepat", "best", "oke", "love"]
+    negative_keywords = ["jelek", "rusak", "kecewa", "lambat", "parah", "batal", "hate", "buruk"]
+
+    if any(word in text_lower for word in positive_keywords):
+        sentiment = "positive"
+        confidence = round(random.uniform(0.8, 0.99), 2)
+    elif any(word in text_lower for word in negative_keywords):
+        sentiment = "negative"
+        confidence = round(random.uniform(0.7, 0.95), 2)
+    else:
+        sentiment = "neutral"
+        confidence = round(random.uniform(0.5, 0.75), 2)
+
+    return {
+        "sentiment": sentiment,
+        "confidence": confidence
+    }
 
 @app.get("/api/recommend_knn/{user_id}", tags=["Recommendations"])
 def recommend_knn_user(user_id: int, k: int = 10):
@@ -321,10 +353,6 @@ def recommend_svdpp_user(user_id: int, k: int = 10):
     final_scores = [score / 5.0 for pid, score in top_k]
     
     results = fetch_db_details(final_ids, final_scores)
-    
-    # for i, item in enumerate(results["recommendations"]):
-    #     item['match_percentage'] = f"{calculate_sigmoid_percentage(final_scores[i])}% Match"
-        
     return results
 
 @app.get("/api/recommend_svdpp/{user_id}/context/{item_id}", tags=["Recommendations"])
@@ -368,10 +396,6 @@ def recommend_svdpp_context(user_id: int, item_id: int, k: int = 10):
     final_scores = [score / 5.0 for pid, score in top_k]
     
     results = fetch_db_details(final_ids, final_scores)
-    
-    # for i, item in enumerate(results["recommendations"]):
-    #     item['match_percentage'] = f"{calculate_sigmoid_percentage(final_scores[i])}% Match"
-        
     return results
 
 @app.get("/api/recommend_ncf/{user_id}", tags=["Recommendations"])
@@ -401,8 +425,7 @@ def recommend_ncf_user(user_id: int, k: int = 10):
     # Category Tensor: Lookup from pre-computed array
     cat_tensor = ml_models["c_idx_lookup"]
     
-    # Dense Tensor: (Interaction=0, Time=Max)
-    # Note: In a real app, you might want to pass 'current_time' from the client
+    # Dense Tensor
     dummy_dense = np.zeros((num_items, 2)) # [0, 0]
     scaled_dense = ml_models["scaler"].transform(dummy_dense)
     dense_tensor = torch.tensor(scaled_dense, dtype=torch.float32)
@@ -421,10 +444,6 @@ def recommend_ncf_user(user_id: int, k: int = 10):
     top_scores /= 6.5
 
     results = fetch_db_details(top_item_ids, top_scores.numpy())
-
-    # for i, item in enumerate(results["recommendations"]):
-    #     item['match_percentage'] = f"{calculate_sigmoid_percentage(top_scores[i])}% Match"
-
     return results
 
 @app.get("/api/recommend_ncf/{user_id}/context/{item_id}", tags=["Recommendations"])
@@ -480,7 +499,6 @@ def recommend_ncf_context(user_id: int, item_id: int, k: int = 10):
         top_k_indices = preds.argsort(descending=True)[:k]
         
         # Map back to real IDs
-        # Note: We need to map from the 'candidate_indices' subset, not the full array
         final_item_indices = candidate_indices[top_k_indices]
         final_item_ids = le_item.inverse_transform(final_item_indices.numpy())
         final_scores = preds[top_k_indices]
@@ -488,10 +506,6 @@ def recommend_ncf_context(user_id: int, item_id: int, k: int = 10):
     final_scores /= 6.5
 
     results = fetch_db_details(final_item_ids, final_scores.numpy())
-
-    # for i, item in enumerate(results["recommendations"]):
-    #     item['match_percentage'] = f"{calculate_sigmoid_percentage(final_scores[i])}% Match"
-
     return results
 
 @app.get("/api/recommend_cbf/{user_id}", tags=["Recommendations"])
@@ -567,6 +581,8 @@ def recommend_cbf_context(user_id: int, item_id: int, k: int = 10):
             break
             
     return fetch_db_details(clean_ids, clean_scores)
+
+# --- PRODUCT & USER ENDPOINTS (EXISTING) ---
 
 @app.get("/api/products/{item_id}", tags=["Products"])
 def get_product_details(item_id: int):

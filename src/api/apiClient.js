@@ -121,3 +121,11 @@ export const getNcfContextRecommendations = (userId, itemId) =>
  */
 export const getCbfContextRecommendations = (userId, itemId) => 
   apiClient.get(`/recommend_cbf/${userId}/context/${itemId}`);
+
+/**
+ * Analyze sentiment of a text
+ * @param {string} text - Review text to analyze
+ * @returns {Promise} - Sentiment analysis result
+ */
+export const analyzeSentiment = (text) => 
+  apiClient.post('/sentiment/analyze', { text });

@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { mockApiResponses } from '../api/mockData';
+import { analyzeSentiment } from '../api/apiClient';
 import ReviewCard from '../components/ReviewCard';
 import SentimentChart from '../components/SentimentChart';
-import { AlertCircle, Loader, Send, Trash, Brain } from 'lucide-react';
+import { AlertCircle, Loader, Send, Trash, Brain, MessageSquare } from 'lucide-react';
 
 export default function SentimentAnalysis() {
   const [reviewText, setReviewText] = useState('');
@@ -20,8 +20,8 @@ export default function SentimentAnalysis() {
       return;
     }
 
-    if (reviewText.trim().length < 10) {
-      setError('Review minimal 10 karakter');
+    if (reviewText.trim().length < 5) { // Adjusted min length
+      setError('Review terlalu pendek (minimal 5 karakter)');
       return;
     }
 
@@ -30,32 +30,30 @@ export default function SentimentAnalysis() {
     setSuccessMessage(null);
 
     try {
-      // Simulasi API call delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // Panggil API real
+      const response = await analyzeSentiment(reviewText);
+      const data = response.data; // Asumsi response: { sentiment: 'positive', confidence: 0.98 }
 
-      // Panggil mock API
-      const response = mockApiResponses.analyzeSentiment(reviewText);
+      // Tambahkan review ke list state
+      setReviews((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          text: reviewText,
+          sentiment: data.sentiment || 'neutral', // Fallback jika undefined
+          confidence: data.confidence || 0,
+          timestamp: new Date().toLocaleTimeString('id-ID'),
+        },
+      ]);
 
-      if (response.status === 'success') {
-        // Tambahkan review ke list
-        setReviews((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
-            text: reviewText,
-            sentiment: response.data.sentiment,
-            confidence: response.data.confidence,
-            timestamp: new Date().toLocaleTimeString('id-ID'),
-          },
-        ]);
-
-        setSuccessMessage('Review berhasil dianalisis!');
-        setReviewText('');
-      } else {
-        throw new Error(response.message);
-      }
+      setSuccessMessage('Review berhasil dianalisis oleh AI!');
+      setReviewText('');
     } catch (err) {
-      setError(err.message);
+      console.error(err);
+      setError(
+        err.response?.data?.detail || 
+        'Gagal menganalisis sentimen. Pastikan backend berjalan dan endpoint tersedia.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -69,7 +67,7 @@ export default function SentimentAnalysis() {
   // Clear all reviews
   const handleClearAll = () => {
     if (reviews.length === 0) return;
-    if (window.confirm('Hapus semua review? Tindakan ini tidak dapat dibatalkan.')) {
+    if (window.confirm('Hapus semua review?')) {
       setReviews([]);
       setSuccessMessage(null);
       setError(null);
@@ -80,9 +78,9 @@ export default function SentimentAnalysis() {
   const calculateSentimentStats = () => {
     if (reviews.length === 0) {
       return {
-        positive: { percentage: 0, label: 'Positif' },
-        neutral: { percentage: 0, label: 'Netral' },
-        negative: { percentage: 0, label: 'Negatif' },
+        positive: { percentage: 0, label: 'Positif', count: 0 },
+        neutral: { percentage: 0, label: 'Netral', count: 0 },
+        negative: { percentage: 0, label: 'Negatif', count: 0 },
       };
     }
 
@@ -115,41 +113,31 @@ export default function SentimentAnalysis() {
 
   const sentimentStats = calculateSentimentStats();
 
-  // Sample reviews untuk demo
-  const sampleReviews = [
-    'Produk ini sangat bagus! Kualitasnya premium dan pengiriman cepat.',
-    'Cukup memuaskan, tapi bisa lebih baik lagi.',
-    'Sangat mengecewakan, produk rusak saat tiba.',
-  ];
-
-  const getRandomSampleReview = () => {
-    return sampleReviews[Math.floor(Math.random() * sampleReviews.length)];
-  };
-
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center p-3 bg-pink-100 rounded-full mb-4">
+          <MessageSquare className="w-8 h-8 text-pink-600" />
+        </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Analisis Sentimen Review
+          Analisis Sentimen AI
         </h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Masukkan teks review produk untuk menganalisis sentimen (Positif/Netral/Negatif)
-          menggunakan algoritma machine learning
+          Demo analisis sentimen ulasan produk menggunakan model NLP. 
+          Ketik ulasan di bawah untuk melihat prediksi AI.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column - Input Form */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Input Section */}
           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Input Review
+              Input Review Baru
             </h2>
 
             <form onSubmit={handleSubmitReview} className="space-y-4">
-              {/* Error Message */}
               {error && (
                 <div className="rounded-md bg-red-50 p-4 border border-red-200 flex items-start space-x-3">
                   <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
@@ -157,89 +145,58 @@ export default function SentimentAnalysis() {
                 </div>
               )}
 
-              {/* Success Message */}
               {successMessage && (
                 <div className="rounded-md bg-green-50 p-4 border border-green-200">
                   <p className="text-sm text-green-800">{successMessage}</p>
                 </div>
               )}
 
-              {/* Textarea */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Teks Review
-                </label>
                 <textarea
                   value={reviewText}
                   onChange={(e) => setReviewText(e.target.value)}
                   onFocus={() => setError(null)}
-                  placeholder="Masukkan review produk di sini... (minimal 10 karakter)"
-                  rows={6}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  placeholder="Contoh: Barangnya bagus banget, pengiriman cepat!"
+                  rows={4}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow"
                   disabled={isLoading}
                 />
-                <p className="mt-1 text-xs text-gray-500">
-                  {reviewText.length} karakter | Minimal 10 karakter
-                </p>
               </div>
 
-              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={isLoading || !reviewText.trim()}
-                className={`w-full inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium text-white transition-colors ${
+                className={`w-full inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium text-white transition-all ${
                   isLoading || !reviewText.trim()
                     ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700'
+                    : 'bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl'
                 }`}
               >
                 {isLoading ? (
                   <>
                     <Loader className="animate-spin mr-2" size={20} />
-                    Menganalisis...
+                    Sedang Menganalisis...
                   </>
                 ) : (
                   <>
                     <Brain className="mr-2" size={20} />
-                    Analisis Sentimen
+                    Analisis Sekarang
                   </>
                 )}
               </button>
-
-              {/* Demo Button */}
-              <button
-                type="button"
-                onClick={() => setReviewText(getRandomSampleReview())}
-                disabled={isLoading}
-                className="w-full px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors disabled:bg-gray-100"
-              >
-                📝 Gunakan Sample Review
-              </button>
             </form>
-
-            {/* Info Box */}
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm font-medium text-blue-900 mb-2">
-                💡 Tips menggunakan analisis sentimen:
-              </p>
-              <ul className="text-xs text-blue-800 space-y-1">
-                <li>• Gunakan bahasa Indonesia untuk akurasi terbaik</li>
-                <li>• Review yang lebih panjang memberikan hasil lebih akurat</li>
-                <li>• Klik tombol "Gunakan Sample Review" untuk contoh</li>
-              </ul>
-            </div>
           </div>
 
-          {/* Reviews List */}
+          {/* List Reviews */}
           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-900">
-                Review yang Dianalisis ({reviews.length})
+                Riwayat Analisis ({reviews.length})
               </h2>
               {reviews.length > 0 && (
                 <button
                   onClick={handleClearAll}
-                  className="flex items-center text-sm text-red-600 hover:text-red-700 transition-colors"
+                  className="flex items-center text-sm text-red-600 hover:text-red-700 font-medium"
                 >
                   <Trash size={16} className="mr-1" />
                   Hapus Semua
@@ -248,11 +205,9 @@ export default function SentimentAnalysis() {
             </div>
 
             {reviews.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <p>Belum ada review yang dianalisis</p>
-                <p className="text-sm mt-2">
-                  Masukkan review di atas untuk memulai analisis
-                </p>
+              <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                <p className="text-gray-500">Belum ada data review.</p>
+                <p className="text-sm text-gray-400 mt-1">Gunakan form di atas untuk mencoba.</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -269,95 +224,39 @@ export default function SentimentAnalysis() {
           </div>
         </div>
 
-        {/* Right Column - Statistics */}
+        {/* Right Column - Stats */}
         <div className="lg:col-span-1">
-          {/* Stats Card */}
           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200 sticky top-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              Statistik Sentimen
+              Statistik Real-time
             </h2>
-
-            {reviews.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Brain className="text-gray-400" size={32} />
-                </div>
-                <p className="text-sm">Analisis minimal 1 review</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Chart */}
+            
+            {reviews.length > 0 ? (
+              <>
                 <SentimentChart scores={sentimentStats} />
-
-                {/* Summary Stats */}
-                <div className="border-t border-gray-200 pt-4 space-y-3">
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600 mb-1">Total Review</p>
-                    <p className="text-3xl font-bold text-gray-900">
-                      {reviews.length}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="text-center">
-                      <p className="text-xs text-gray-600">Positif</p>
-                      <p className="text-lg font-bold text-green-600">
-                        {sentimentStats.positive.count}
-                      </p>
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="p-2 bg-green-50 rounded-lg">
+                      <div className="text-lg font-bold text-green-700">{sentimentStats.positive.count}</div>
+                      <div className="text-xs text-green-600">Positif</div>
                     </div>
-                    <div className="text-center">
-                      <p className="text-xs text-gray-600">Netral</p>
-                      <p className="text-lg font-bold text-yellow-600">
-                        {sentimentStats.neutral.count}
-                      </p>
+                    <div className="p-2 bg-yellow-50 rounded-lg">
+                      <div className="text-lg font-bold text-yellow-700">{sentimentStats.neutral.count}</div>
+                      <div className="text-xs text-yellow-600">Netral</div>
                     </div>
-                    <div className="text-center">
-                      <p className="text-xs text-gray-600">Negatif</p>
-                      <p className="text-lg font-bold text-red-600">
-                        {sentimentStats.negative.count}
-                      </p>
+                    <div className="p-2 bg-red-50 rounded-lg">
+                      <div className="text-lg font-bold text-red-700">{sentimentStats.negative.count}</div>
+                      <div className="text-xs text-red-600">Negatif</div>
                     </div>
-                  </div>
-
-                  {/* Overall Sentiment */}
-                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-200">
-                    <p className="text-xs text-gray-600 mb-1">Sentimen Keseluruhan</p>
-                    <p className="text-sm font-bold text-gray-900">
-                      {sentimentStats.positive.percentage >
-                      sentimentStats.negative.percentage
-                        ? '😊 Positif'
-                        : sentimentStats.negative.percentage >
-                            sentimentStats.positive.percentage
-                          ? '😞 Negatif'
-                          : '😐 Netral'}
-                    </p>
                   </div>
                 </div>
+              </>
+            ) : (
+              <div className="text-center text-gray-400 py-8">
+                Menunggu data analisis...
               </div>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* Info Section */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-          <p className="text-sm font-medium text-green-900 mb-2">✅ Sentimen Positif</p>
-          <p className="text-xs text-green-800">
-            Review yang menunjukkan kepuasan pelanggan terhadap produk atau layanan
-          </p>
-        </div>
-        <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-          <p className="text-sm font-medium text-yellow-900 mb-2">➖ Sentimen Netral</p>
-          <p className="text-xs text-yellow-800">
-            Review yang bersifat faktual tanpa menunjukkan kepuasan atau ketidakpuasan
-          </p>
-        </div>
-        <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-          <p className="text-sm font-medium text-red-900 mb-2">❌ Sentimen Negatif</p>
-          <p className="text-xs text-red-800">
-            Review yang menunjukkan ketidakpuasan pelanggan terhadap produk atau layanan
-          </p>
         </div>
       </div>
     </div>
