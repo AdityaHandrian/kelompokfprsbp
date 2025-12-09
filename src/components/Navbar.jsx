@@ -101,9 +101,9 @@ export default function Navbar() {
           {/* Logo */}
           <Link to={ROUTES.HOME} className="flex items-center space-x-2">
             <div className="w-10 h-10 bg-white text-blue-600 rounded-lg flex items-center justify-center font-bold">
-              RS
+              PRS
             </div>
-            <span className="hidden sm:inline text-lg font-bold">RecSys Demo</span>
+            <span className="hidden sm:inline text-lg font-bold">Product Recommendation System Demo</span>
           </Link>
 
           {/* Desktop Menu */}
