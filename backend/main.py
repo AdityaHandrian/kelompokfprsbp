@@ -586,11 +586,23 @@ def get_products_paginated(page_num: int, page_size: int):
     return [dict(p) for p in products]
 
 @app.get("/api/users/", tags=["Users"])
-def get_all_user_profiles():
+def get_all_user_profiles(page: int = 1, limit: int = 50):
     conn = get_db_connection()
-    profiles = conn.execute("SELECT * FROM users").fetchall()
+    
+    total = conn.execute("SELECT COUNT(*) as count FROM users").fetchone()['count']
+    
+    offset = (page - 1) * limit
+    
+    profiles = conn.execute("SELECT * FROM users LIMIT ? OFFSET ?", (limit, offset)).fetchall()
     conn.close()
-    return [dict(p) for p in profiles]
+    
+    return {
+        "users": [dict(p) for p in profiles],
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "total_pages": (total + limit - 1) // limit
+    }
 
 @app.get("/api/users/{user_id}", tags=["Users"])
 def get_user_profile(user_id: int):
@@ -601,7 +613,8 @@ def get_user_profile(user_id: int):
     
     user_data = dict(profile)
 
-    raw_history = user_data.get("purchase_history", "[]")
+    # Try both field names for purchase history
+    raw_history = user_data.get("purchase_history_ids") or user_data.get("purchase_history", "[]")
     item_ids = []
 
     try:
