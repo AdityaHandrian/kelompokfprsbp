@@ -11,6 +11,9 @@ import {
   Zap,
   MessageSquare, // Icon baru
 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import apiClient from '../api/apiClient';
+import ProductCard from '../components/ProductCard';
 
 export default function Home() {
   const { isAuthenticated, currentUserId } = useAuthContext();
